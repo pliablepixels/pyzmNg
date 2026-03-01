@@ -300,3 +300,85 @@ class TestDetectionResult:
             result = dr.annotate()
             assert mock_cv2.rectangle.called
             assert mock_cv2.putText.called
+
+    @pytest.mark.integration
+    def test_annotate_polygons(self):
+        """annotate() draws zone polygons when provided."""
+        mock_cv2 = MagicMock()
+        mock_cv2.FONT_HERSHEY_SIMPLEX = 0
+        mock_cv2.getTextSize.return_value = ((100, 20), 0)
+        mock_np = MagicMock()
+        mock_image = MagicMock()
+        mock_image.copy.return_value = mock_image
+
+        dr = DetectionResult(detections=self._make_detections(), image=mock_image)
+        polygons = [{"name": "yard", "value": [(0, 0), (100, 0), (100, 100), (0, 100)]}]
+
+        with patch.dict("sys.modules", {"cv2": mock_cv2, "numpy": mock_np}):
+            dr.annotate(polygons=polygons, poly_color=(0, 255, 0), poly_thickness=2)
+            assert mock_cv2.polylines.called
+
+    @pytest.mark.integration
+    def test_annotate_write_conf_false(self):
+        """annotate(write_conf=False) omits confidence from labels."""
+        mock_cv2 = MagicMock()
+        mock_cv2.FONT_HERSHEY_SIMPLEX = 0
+        mock_cv2.getTextSize.return_value = ((100, 20), 0)
+        mock_np = MagicMock()
+        mock_image = MagicMock()
+        mock_image.copy.return_value = mock_image
+
+        dr = DetectionResult(detections=self._make_detections(), image=mock_image)
+
+        with patch.dict("sys.modules", {"cv2": mock_cv2, "numpy": mock_np}):
+            dr.annotate(write_conf=False)
+            # Check that putText was called with label only (no %)
+            for call in mock_cv2.putText.call_args_list:
+                label_arg = call[0][1]
+                assert "%" not in label_arg
+
+    @pytest.mark.integration
+    def test_annotate_draw_error_boxes_false(self):
+        """annotate(draw_error_boxes=False) skips error box drawing."""
+        mock_cv2 = MagicMock()
+        mock_cv2.FONT_HERSHEY_SIMPLEX = 0
+        mock_cv2.getTextSize.return_value = ((100, 20), 0)
+        mock_np = MagicMock()
+        mock_image = MagicMock()
+        mock_image.copy.return_value = mock_image
+
+        eb = BBox(x1=0, y1=0, x2=10, y2=10)
+        dr = DetectionResult(
+            detections=self._make_detections(),
+            image=mock_image,
+            error_boxes=[eb],
+        )
+
+        with patch.dict("sys.modules", {"cv2": mock_cv2, "numpy": mock_np}):
+            dr.annotate(draw_error_boxes=False)
+            # rectangle called for detection boxes only (2 detections × 2 calls each),
+            # NOT for error boxes
+            # Each detection: 1 box rectangle + 1 label background rectangle = 2
+            assert mock_cv2.rectangle.call_count == 4  # 2 detections × 2
+
+    @pytest.mark.integration
+    def test_annotate_draw_error_boxes_default(self):
+        """By default, annotate() draws error boxes."""
+        mock_cv2 = MagicMock()
+        mock_cv2.FONT_HERSHEY_SIMPLEX = 0
+        mock_cv2.getTextSize.return_value = ((100, 20), 0)
+        mock_np = MagicMock()
+        mock_image = MagicMock()
+        mock_image.copy.return_value = mock_image
+
+        eb = BBox(x1=0, y1=0, x2=10, y2=10)
+        dr = DetectionResult(
+            detections=self._make_detections(),
+            image=mock_image,
+            error_boxes=[eb],
+        )
+
+        with patch.dict("sys.modules", {"cv2": mock_cv2, "numpy": mock_np}):
+            dr.annotate()
+            # 2 detections × 2 rectangles + 1 error box = 5
+            assert mock_cv2.rectangle.call_count == 5

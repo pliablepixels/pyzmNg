@@ -122,11 +122,24 @@ class DetectionResult:
             image_dimensions=self.image_dimensions,
         )
 
-    def annotate(self, **draw_kwargs: object) -> "np.ndarray":
+    def annotate(self, *, polygons=None, write_conf=True,
+                 poly_color=(255, 255, 255), poly_thickness=1,
+                 draw_error_boxes=True, **draw_kwargs) -> "np.ndarray":
         """Draw bounding boxes on ``self.image`` and return the annotated copy.
 
-        Extra *draw_kwargs* are forwarded to the internal bbox drawing function.
-        If OpenCV is not available this raises ``ImportError``.
+        Parameters
+        ----------
+        polygons : list[dict] | None
+            Zone polygons to draw. Each dict must have a ``'value'`` key
+            containing a sequence of ``(x, y)`` coordinate pairs.
+        write_conf : bool
+            If *True* (default), append ``confidence%`` to each label.
+        poly_color : tuple[int, int, int]
+            BGR colour for polygon outlines (default white).
+        poly_thickness : int
+            Line thickness for polygon outlines (default 1).
+        draw_error_boxes : bool
+            If *True* (default), draw red rectangles for error boxes.
         """
         import cv2  # noqa: F811
         import numpy as np  # noqa: F811
@@ -135,6 +148,15 @@ class DetectionResult:
             raise ValueError("No image attached to this DetectionResult")
 
         image = self.image.copy()
+
+        # Draw zone polygons
+        if poly_thickness and polygons:
+            for ps in polygons:
+                cv2.polylines(
+                    image,
+                    [np.asarray(ps['value'], dtype=np.int32)],
+                    True, poly_color, thickness=poly_thickness,
+                )
 
         slate_colors = [
             (39, 174, 96),
@@ -148,7 +170,7 @@ class DetectionResult:
         for i, det in enumerate(self.detections):
             color = slate_colors[i % len(slate_colors)]
             b = det.bbox
-            label_text = f"{det.label} {det.confidence:.0%}"
+            label_text = f"{det.label} {det.confidence:.0%}" if write_conf else det.label
             cv2.rectangle(image, (b.x1, b.y1), (b.x2, b.y2), color, 2)
 
             font = cv2.FONT_HERSHEY_SIMPLEX
@@ -162,8 +184,9 @@ class DetectionResult:
             )
             cv2.putText(image, label_text, (b.x1 + 2, b.y1 - 2), font, 0.8, (255, 255, 255), 1)
 
-        for eb in self.error_boxes:
-            cv2.rectangle(image, (eb.x1, eb.y1), (eb.x2, eb.y2), (0, 0, 255), 1)
+        if draw_error_boxes:
+            for eb in self.error_boxes:
+                cv2.rectangle(image, (eb.x1, eb.y1), (eb.x2, eb.y2), (0, 0, 255), 1)
 
         return image
 
