@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.1.9] - 2026-03-01
+
+### Bug Fixes
+
+- default convert_snapshot_to_fid to True ([44e418d](https://github.com/pliablepixels/pyzm/commit/44e418d3738cf0506bdde10d759045f48fc8fda0))
+
+### Features
+
+- accept both data.yaml and data.yml for YOLO datasets ([b3ca670](https://github.com/pliablepixels/pyzm/commit/b3ca670525a6c14ffc32756333261441a35d678d))
+
+### Miscellaneous
+
+- bump version to v2.1.9 ([8454c0b](https://github.com/pliablepixels/pyzm/commit/8454c0bb35c40485c0226bf85844a6c5e664952d))
+
 ## [2.1.8] - 2026-02-25
 
 ### Bug Fixes
@@ -11,6 +25,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
+- update CHANGELOG for v2.1.8 ([0bd7d75](https://github.com/pliablepixels/pyzm/commit/0bd7d756c8fb8cb05e68991962fff2e75186c2bd))
 - clarified not to use pypi for custom opencv installs ([54b3166](https://github.com/pliablepixels/pyzm/commit/54b31661d7df22d4373643ac6cce54f20b0a172f))
 
 ### Miscellaneous
