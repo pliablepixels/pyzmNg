@@ -411,7 +411,7 @@ class StreamConfig(BaseModel):
     save_frames: bool = False
     save_frames_dir: str = "/tmp"
     delete_after_analyze: bool = False
-    convert_snapshot_to_fid: bool = False
+    convert_snapshot_to_fid: bool = True
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "StreamConfig":
