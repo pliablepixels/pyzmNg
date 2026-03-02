@@ -30,4 +30,10 @@ Documentation notes
 - You are an expert document writer and someone who cares deeply that documentation is clear, easy to follow, user friendly and comprehensive and CORRECT.
 - Analyze RTD docs and make sure the documents fully represent the capabilities of the system, does not have outdated or incomplete things and is user forward.
 - Remember that zm_detect.py leans on pyzm (~/fiddle/zmeventnotification) for most of its functionality. Always validate if what you are doing breaks zm_detect.py and its helpers and make sure you alert me on what to do if you break zm_detect.py
-~
+- Never make changes to CHANGELOG. It is auto generated
+
+When responding to issues or PRs from others
+--------------------------------------------
+- Never overwrite anyones (including AI agent) comments. Add responses. Thi
+s is important because I have write permission to upstream repos
+- Always identify yourself as Claude
