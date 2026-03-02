@@ -3,11 +3,34 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.2.0] - 2026-03-02
+
+### Bug Fixes
+
+- parse float zone coordinates from ZM 1.37+ ([f1948e8](https://github.com/pliablepixels/pyzm/commit/f1948e88587c62704b014bd2e4224e71e155c9fc))
+
+### Documentation
+
+- document annotate() params and Event.save_objdetect() ([6a06113](https://github.com/pliablepixels/pyzm/commit/6a061132fa5c9495f342a71575019549168fb3b8))
+
+### Features
+
+- add Event.save_objdetect() for writing detection artifacts ([7627ae9](https://github.com/pliablepixels/pyzm/commit/7627ae951f723ac16f7f1381c0333c78d583009a))
+- extend annotate() with polygons, write_conf, draw_error_boxes ([967aa8d](https://github.com/pliablepixels/pyzm/commit/967aa8d48db3d55e1cbfc4974278a7e3faa26414))
+
+### Miscellaneous
+
+- docs ([23be59f](https://github.com/pliablepixels/pyzm/commit/23be59ff7398bf407d490243e34ba763ec12a6ba))
+
 ## [2.1.9] - 2026-03-01
 
 ### Bug Fixes
 
 - default convert_snapshot_to_fid to True ([44e418d](https://github.com/pliablepixels/pyzm/commit/44e418d3738cf0506bdde10d759045f48fc8fda0))
+
+### Documentation
+
+- update CHANGELOG for v2.1.9 ([521ebe6](https://github.com/pliablepixels/pyzm/commit/521ebe6013b88dab21b7902a0287b7e6486fa40d))
 
 ### Features
 
