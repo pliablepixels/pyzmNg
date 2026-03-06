@@ -138,4 +138,87 @@ unmodified API response dict — useful for accessing fields like ``Path``,
    zones[0].raw()                    # full Zone API dict including AlarmRGB, etc.
 
 ``raw()`` is available on ``Monitor``, ``MonitorStatus``, ``Event``,
-``Frame``, ``Zone``, and ``PTZCapabilities``.
+``Frame``, ``Zone``, ``PTZCapabilities``, and ``Notification``.
+
+Notifications (Push Tokens)
+----------------------------
+
+*Requires ZoneMinder 1.39.2+.*
+
+ZoneMinder's ``Notifications`` API stores FCM push tokens registered by client
+apps (e.g. zmNg). pyzm provides methods to query and manage these tokens —
+primarily used by ``zm_detect`` to send push notifications after detection.
+
+.. code-block:: python
+
+   # List all registered tokens for the authenticated user
+   tokens = zm.notifications()
+   for t in tokens:
+       print(f"Id={t.id}, platform={t.platform}, token={t.token[:20]}...")
+
+   # Get a specific notification by ID
+   notif = zm.notification(1)
+
+   # Check if a token should receive a notification for a given monitor
+   if notif.should_notify(monitor_id=3):
+       print("Token is registered for monitor 3")
+
+   # Check throttle (returns True if Interval has not elapsed since LastNotifiedAt)
+   if notif.is_throttled():
+       print("Skipping — too soon since last notification")
+
+   # Update LastNotifiedAt and increment BadgeCount after sending
+   notif.update_last_sent(badge=notif.badge_count + 1)
+
+   # Delete a token (e.g. when FCM reports it as invalid)
+   notif.delete()
+
+Notification fields
+~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 15 65
+
+   * - Field
+     - Type
+     - Description
+   * - ``id``
+     - ``int``
+     - Primary key
+   * - ``user_id``
+     - ``int | None``
+     - Owning ZM user (``None`` when auth is disabled)
+   * - ``token``
+     - ``str``
+     - FCM registration token
+   * - ``platform``
+     - ``str``
+     - ``"android"``, ``"ios"``, or ``"web"``
+   * - ``monitor_list``
+     - ``str | None``
+     - Comma-separated monitor IDs, or ``None`` for all monitors
+   * - ``interval``
+     - ``int``
+     - Minimum seconds between notifications (0 = no throttle)
+   * - ``push_state``
+     - ``str``
+     - ``"enabled"`` or ``"disabled"``
+   * - ``app_version``
+     - ``str | None``
+     - Client app version
+   * - ``badge_count``
+     - ``int``
+     - Current badge count
+   * - ``last_notified_at``
+     - ``datetime | None``
+     - When the last push was sent to this token
+
+Helper methods
+~~~~~~~~~~~~~~~
+
+- ``monitors()`` — returns the monitor list as a ``list[int]``, or empty list if all monitors
+- ``should_notify(monitor_id)`` — ``True`` if this token should receive notifications for the given monitor (checks ``push_state``, ``monitor_list``)
+- ``is_throttled()`` — ``True`` if ``interval`` seconds have not elapsed since ``last_notified_at``
+- ``update_last_sent(badge)`` — updates ``LastNotifiedAt`` to now and sets ``BadgeCount``
+- ``delete()`` — deletes this notification record from ZM
