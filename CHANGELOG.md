@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.3.0] - 2026-03-06
+
+### Documentation
+
+- add Notification model documentation to zm_client guide ([03a1d4b](https://github.com/pliablepixels/pyzm/commit/03a1d4b09ad2bedda142381c1b579c46d845bb6e))
+
+### Features
+
+- add Notification model and ZMClient methods for push token registration ([ffeb58a](https://github.com/pliablepixels/pyzm/commit/ffeb58a2fe073ffe6b71ff4befea35db84535929))
+
+### Miscellaneous
+
+- bump pyzm to 2.3.0 ([fd4f284](https://github.com/pliablepixels/pyzm/commit/fd4f284c817b6900c9bdc0bc00d929b70aeb84d3))
+
+### Refactoring
+
+- lazy-fetch monitor dimensions for zone percent conversion ([035dd63](https://github.com/pliablepixels/pyzm/commit/035dd630f36eb238124662f6172096d8831c1743))
+
 ## [2.2.0] - 2026-03-02
 
 ### Bug Fixes
@@ -11,6 +29,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
+- update CHANGELOG for v2.2.0 ([a8b7b78](https://github.com/pliablepixels/pyzm/commit/a8b7b78f5e171c03add0ac23fda9cb9a564cf3d0))
 - document annotate() params and Event.save_objdetect() ([6a06113](https://github.com/pliablepixels/pyzm/commit/6a061132fa5c9495f342a71575019549168fb3b8))
 
 ### Features
