@@ -15,6 +15,15 @@ from pydantic import BaseModel, Field, SecretStr, model_validator
 logger = logging.getLogger("pyzm")
 
 
+def _bool(val: Any, default: bool = False) -> bool:
+    """Convert a YAML value to bool, handling both Python bools and 'yes'/'no' strings."""
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.lower() in ("yes", "true", "1")
+    return default
+
+
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -263,7 +272,7 @@ class DetectorConfig(BaseModel):
             frame_strategy=frame_strat,
             max_detection_size=general.get("max_detection_size"),
             pattern=general.get("pattern", ".*"),
-            match_past_detections=general.get("match_past_detections") == "yes",
+            match_past_detections=_bool(general.get("match_past_detections")),
             past_det_max_diff_area=general.get("past_det_max_diff_area", "5%"),
             past_det_max_diff_area_labels=label_area_overrides,
             ignore_past_detection_labels=general.get("ignore_past_detection_labels", []),
@@ -285,7 +294,7 @@ def _build_type_overrides(section_general: dict[str, Any]) -> TypeOverrides | No
     if "max_detection_size" in section_general:
         kwargs["max_detection_size"] = str(section_general["max_detection_size"])
     if "match_past_detections" in section_general:
-        kwargs["match_past_detections"] = section_general["match_past_detections"] == "yes"
+        kwargs["match_past_detections"] = _bool(section_general["match_past_detections"])
     if "past_det_max_diff_area" in section_general:
         kwargs["past_det_max_diff_area"] = str(section_general["past_det_max_diff_area"])
     if "ignore_past_detection_labels" in section_general:
@@ -349,7 +358,7 @@ def _seq_item_to_model_config(
 
     return ModelConfig(
         name=seq.get("name"),
-        enabled=seq.get("enabled", "yes") != "no",
+        enabled=_bool(seq.get("enabled", True), default=True),
         type=mtype,
         framework=fw,
         processor=processor,
@@ -363,7 +372,7 @@ def _seq_item_to_model_config(
         model_height=int(seq["model_height"]) if "model_height" in seq else None,
         known_faces_dir=seq.get("known_images_path"),
         unknown_faces_dir=seq.get("unknown_images_path"),
-        save_unknown_faces=seq.get("save_unknown_faces", "no") == "yes",
+        save_unknown_faces=_bool(seq.get("save_unknown_faces", "no")),
         save_unknown_faces_leeway_pixels=int(seq.get("save_unknown_faces_leeway_pixels", 0)),
         face_model=seq.get("face_model", "cnn"),
         face_train_model=seq.get("face_train_model", "cnn"),
@@ -383,7 +392,7 @@ def _seq_item_to_model_config(
         aws_region=seq.get("aws_region", "us-east-1"),
         aws_access_key_id=seq.get("aws_access_key_id"),
         aws_secret_access_key=seq.get("aws_secret_access_key"),
-        disable_locks=(seq.get("disable_locks") or global_general.get("disable_locks", "no")) == "yes",
+        disable_locks=_bool(seq.get("disable_locks") or global_general.get("disable_locks", "no")),
         pre_existing_labels=pre_existing if isinstance(pre_existing, list) else [],
     )
 
@@ -426,13 +435,6 @@ class StreamConfig(BaseModel):
         Keys not relevant to StreamConfig (like ``api``, ``polygons``,
         ``mid``, ``frame_strategy``) are silently ignored.
         """
-        def _bool(val: Any, default: bool = False) -> bool:
-            if isinstance(val, bool):
-                return val
-            if isinstance(val, str):
-                return val.lower() in ("yes", "true", "1")
-            return default
-
         kwargs: dict[str, Any] = {}
 
         # resize: 'no' -> None, numeric string -> int
