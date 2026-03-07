@@ -129,28 +129,28 @@ class FaceDlibBackend(MLBackend, PortalockerMixin):
 
         if self._auto_lock:
             self.acquire_lock()
+        try:
+            _t0 = _time.perf_counter()
+            face_locations = face_recognition.face_locations(
+                rgb_image,
+                model=self.face_model,
+                number_of_times_to_upsample=self.upsample_times,
+            )
+            logger.debug(
+                "perf: processor:%s finding faces took %s",
+                self.processor,
+                f"{(_time.perf_counter() - _t0) * 1000:.2f} ms",
+            )
 
-        _t0 = _time.perf_counter()
-        face_locations = face_recognition.face_locations(
-            rgb_image,
-            model=self.face_model,
-            number_of_times_to_upsample=self.upsample_times,
-        )
-        logger.debug(
-            "perf: processor:%s finding faces took %s",
-            self.processor,
-            f"{(_time.perf_counter() - _t0) * 1000:.2f} ms",
-        )
-
-        _t0 = _time.perf_counter()
-        face_encodings = face_recognition.face_encodings(
-            rgb_image,
-            known_face_locations=face_locations,
-            num_jitters=self.num_jitters,
-        )
-
-        if self._auto_lock:
-            self.release_lock()
+            _t0 = _time.perf_counter()
+            face_encodings = face_recognition.face_encodings(
+                rgb_image,
+                known_face_locations=face_locations,
+                num_jitters=self.num_jitters,
+            )
+        finally:
+            if self._auto_lock:
+                self.release_lock()
 
         logger.debug(
             "perf: processor:%s computing face recognition distances took %s",
