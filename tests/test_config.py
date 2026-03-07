@@ -260,3 +260,36 @@ class TestModelConfigOptions:
         cfg = DetectorConfig.from_dict(ml)
         assert "object_min_confidence" not in cfg.models[0].options
         assert "name" not in cfg.models[0].options
+
+
+# ---------------------------------------------------------------------------
+# max_lock_wait / max_processes
+# ---------------------------------------------------------------------------
+
+class TestLockConfig:
+    def test_max_lock_wait_from_sequence(self):
+        ml = {
+            "general": {"model_sequence": "object"},
+            "object": {"general": {}, "sequence": [{"max_lock_wait": 30, "max_processes": 4}]},
+        }
+        cfg = DetectorConfig.from_dict(ml)
+        assert cfg.models[0].max_lock_wait == 30
+        assert cfg.models[0].max_processes == 4
+
+    def test_max_lock_wait_from_global(self):
+        ml = {
+            "general": {"model_sequence": "object", "max_lock_wait": 60, "max_processes": 2},
+            "object": {"general": {}, "sequence": [{}]},
+        }
+        cfg = DetectorConfig.from_dict(ml)
+        assert cfg.models[0].max_lock_wait == 60
+        assert cfg.models[0].max_processes == 2
+
+    def test_max_lock_wait_defaults(self):
+        ml = {
+            "general": {"model_sequence": "object"},
+            "object": {"general": {}, "sequence": [{}]},
+        }
+        cfg = DetectorConfig.from_dict(ml)
+        assert cfg.models[0].max_lock_wait == 120
+        assert cfg.models[0].max_processes == 1

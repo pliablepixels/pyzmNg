@@ -415,6 +415,8 @@ def _seq_item_to_model_config(
         aws_access_key_id=seq.get("aws_access_key_id"),
         aws_secret_access_key=seq.get("aws_secret_access_key"),
         disable_locks=_bool(seq.get("disable_locks") or global_general.get("disable_locks", "no")),
+        max_lock_wait=int(seq.get("max_lock_wait", global_general.get("max_lock_wait", 120))),
+        max_processes=int(seq.get("max_processes", global_general.get("max_processes", 1))),
         pre_existing_labels=pre_existing if isinstance(pre_existing, list) else [],
         options=options,
     )
