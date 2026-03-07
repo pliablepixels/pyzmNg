@@ -203,3 +203,60 @@ class TestDisableLocks:
             _minimal_ml_options(seq_extras={"disable_locks": False})
         )
         assert cfg.models[0].disable_locks is False
+
+
+# ---------------------------------------------------------------------------
+# ModelConfig.options population
+# ---------------------------------------------------------------------------
+
+class TestModelConfigOptions:
+    """H1: options dict must be populated from YAML sequence items."""
+
+    def test_alpr_options_populated(self):
+        ml = {
+            "general": {"model_sequence": "alpr"},
+            "alpr": {
+                "general": {},
+                "sequence": [{
+                    "alpr_service": "plate_recognizer",
+                    "alpr_key": "test",
+                    "alpr_url": "http://test",
+                    "platerec_stats": "yes",
+                    "platerec_regions": ["us"],
+                    "alpr_api_type": "local",
+                    "openalpr_cmdline_binary": "/usr/bin/alpr",
+                }],
+            },
+        }
+        cfg = DetectorConfig.from_dict(ml)
+        opts = cfg.models[0].options
+        assert opts["platerec_stats"] == "yes"
+        assert opts["platerec_regions"] == ["us"]
+        assert opts["alpr_api_type"] == "local"
+        assert opts["openalpr_cmdline_binary"] == "/usr/bin/alpr"
+
+    def test_face_unknown_face_name_in_options(self):
+        ml = {
+            "general": {"model_sequence": "face"},
+            "face": {
+                "general": {},
+                "sequence": [{
+                    "face_detection_framework": "dlib",
+                    "unknown_face_name": "stranger",
+                }],
+            },
+        }
+        cfg = DetectorConfig.from_dict(ml)
+        assert cfg.models[0].options["unknown_face_name"] == "stranger"
+
+    def test_known_keys_not_in_options(self):
+        ml = {
+            "general": {"model_sequence": "object"},
+            "object": {
+                "general": {},
+                "sequence": [{"object_min_confidence": 0.5, "name": "yolo"}],
+            },
+        }
+        cfg = DetectorConfig.from_dict(ml)
+        assert "object_min_confidence" not in cfg.models[0].options
+        assert "name" not in cfg.models[0].options

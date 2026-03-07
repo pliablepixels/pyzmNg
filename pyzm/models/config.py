@@ -356,6 +356,28 @@ def _seq_item_to_model_config(
         or []
     )
 
+    _KNOWN_SEQ_KEYS = frozenset({
+        "name", "enabled",
+        f"{prefix}_framework", "face_detection_framework",
+        f"{prefix}_processor", "object_processor",
+        f"{prefix}_weights", f"{prefix}_config", f"{prefix}_labels",
+        f"{prefix}_min_confidence", "object_min_confidence",
+        "max_detection_size", "max_size",
+        "model_width", "model_height",
+        "known_images_path", "unknown_images_path",
+        "save_unknown_faces", "save_unknown_faces_leeway_pixels",
+        "face_model", "face_train_model",
+        "face_recog_dist_threshold", "face_num_jitters", "face_upsample_times",
+        "alpr_service", "alpr_key", "alpr_url",
+        "platerec_min_dscore", "platerec_min_score",
+        "birdnet_lat", "birdnet_lon", "birdnet_min_conf", "birdnet_min_confidence",
+        "birdnet_sensitivity", "birdnet_overlap",
+        "aws_region", "aws_access_key_id", "aws_secret_access_key",
+        "disable_locks", "max_lock_wait", "max_processes",
+        "pre_existing_labels",
+    })
+    options = {k: v for k, v in seq.items() if k not in _KNOWN_SEQ_KEYS}
+
     return ModelConfig(
         name=seq.get("name"),
         enabled=_bool(seq.get("enabled", True), default=True),
@@ -394,6 +416,7 @@ def _seq_item_to_model_config(
         aws_secret_access_key=seq.get("aws_secret_access_key"),
         disable_locks=_bool(seq.get("disable_locks") or global_general.get("disable_locks", "no")),
         pre_existing_labels=pre_existing if isinstance(pre_existing, list) else [],
+        options=options,
     )
 
 
