@@ -3,10 +3,45 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.3.1] - 2026-03-08
+
+### Bug Fixes
+
+- face_tpu default, shm namedtuple caching, api params copy, dead StreamConfig fields ([8ac5fa8](https://github.com/pliablepixels/pyzm/commit/8ac5fa86fbe1645af7b2491470459bed6efaff15))
+- DB connection leaks, auth URL separator, db.py port parsing ([6b6091c](https://github.com/pliablepixels/pyzm/commit/6b6091c96e974fab292925eb540df4bee6cb2b80))
+- serve/app.py — FIRST_NEW, original_shape, detector_config, DRY zones ([125256d](https://github.com/pliablepixels/pyzm/commit/125256d25b3f31b3faf69ea1692eff760f2aba43))
+- ignore_pattern should not short-circuit zone matching ([4f31fff](https://github.com/pliablepixels/pyzm/commit/4f31fff9137ddaac589d0466f60715907bd6ad83))
+- release face_dlib lock on exception (prevent deadlock) ([682f869](https://github.com/pliablepixels/pyzm/commit/682f869d609491dc8f642e1332214da0e7e45b07))
+- read max_lock_wait and max_processes from YAML config ([589eafc](https://github.com/pliablepixels/pyzm/commit/589eafccb148bc18eeca8b8184f9820cbc69f21d))
+- populate ModelConfig.options from YAML sequence items ([524503c](https://github.com/pliablepixels/pyzm/commit/524503cbc8706d5ea2b9116b6d9aa6dbf46f19c0))
+- handle YAML booleans in config parsing (true/false vs yes/no) ([d14b119](https://github.com/pliablepixels/pyzm/commit/d14b119966a5096eb5a0aa076f44dc172abc4979))
+
+### Features
+
+- client-side filtering for remote detection ([8704984](https://github.com/pliablepixels/pyzm/commit/870498443c8265347443f871cf6985830d015ebc))
+- include detection_types in wire format for remote filtering ([b000ede](https://github.com/pliablepixels/pyzm/commit/b000edee120e4e76e0b869522b003a180b413208))
+
+### Miscellaneous
+
+- ver bump ([e4e335b](https://github.com/pliablepixels/pyzm/commit/e4e335bc74975f1679bbda840a872abe1171633f))
+- remove dead filter_past_detections wrapper ([1846e99](https://github.com/pliablepixels/pyzm/commit/1846e99081c41ccddfc3d7eba0b8e8a29671ca79))
+
+### Refactoring
+
+- extract filter_past_per_type into standalone function ([081e2e5](https://github.com/pliablepixels/pyzm/commit/081e2e53951ee31b9e2bf244e5d7602f9c552f24))
+- server endpoints return raw detections, no filtering ([8c5a445](https://github.com/pliablepixels/pyzm/commit/8c5a44598909ba2f7e8fc24d7dd7f70c8c8135bc))
+- remove dead downscaling code and duplicate import from face_dlib ([c5a18f9](https://github.com/pliablepixels/pyzm/commit/c5a18f9785c93b1b850affde73f17be647c2be47))
+
+### Testing
+
+- update e2e remote tests for thin server ([60b883b](https://github.com/pliablepixels/pyzm/commit/60b883b2d4c4cad211589d930976cf8373a8094f))
+- comprehensive config variant tests for local and remote modes ([79d28fb](https://github.com/pliablepixels/pyzm/commit/79d28fbeb07deb073d81c1bba31cf7c492a4ada8))
+
 ## [2.3.0] - 2026-03-06
 
 ### Documentation
 
+- update CHANGELOG for v2.3.0 ([370a118](https://github.com/pliablepixels/pyzm/commit/370a1183263386128da751da7d5acf41a9108b91))
 - add Notification model documentation to zm_client guide ([03a1d4b](https://github.com/pliablepixels/pyzm/commit/03a1d4b09ad2bedda142381c1b579c46d845bb6e))
 
 ### Features
