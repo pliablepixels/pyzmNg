@@ -431,34 +431,37 @@ class ZMClient:
             return
 
         cur = conn.cursor(dictionary=True)
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Find or create tag
-        cur.execute("SELECT Id FROM Tags WHERE Name=%s", (label,))
-        row = cur.fetchone()
-        if row:
-            tag_id = row["Id"]
-            cur.execute("UPDATE Tags SET LastAssignedDate=%s WHERE Id=%s", (now, tag_id))
-            logger.debug("Tag '%s' exists (id=%s), linked to event %s", label, tag_id, event_id)
-        else:
-            cur.execute(
-                "INSERT INTO Tags (Name, CreateDate, LastAssignedDate) VALUES (%s, %s, %s)",
-                (label, now, now),
-            )
-            tag_id = cur.lastrowid
-            logger.debug("Created tag '%s' (id=%s), linked to event %s", label, tag_id, event_id)
-
-        # Link tag to event (ignore duplicate)
         try:
-            cur.execute(
-                "INSERT INTO Events_Tags (TagId, EventId) VALUES (%s, %s)",
-                (tag_id, event_id),
-            )
-        except Exception:
-            logger.debug("Tag '%s' already linked to event %s", label, event_id)
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        conn.commit()
-        cur.close()
+            # Find or create tag
+            cur.execute("SELECT Id FROM Tags WHERE Name=%s", (label,))
+            row = cur.fetchone()
+            if row:
+                tag_id = row["Id"]
+                cur.execute("UPDATE Tags SET LastAssignedDate=%s WHERE Id=%s", (now, tag_id))
+                logger.debug("Tag '%s' exists (id=%s), linked to event %s", label, tag_id, event_id)
+            else:
+                cur.execute(
+                    "INSERT INTO Tags (Name, CreateDate, LastAssignedDate) VALUES (%s, %s, %s)",
+                    (label, now, now),
+                )
+                tag_id = cur.lastrowid
+                logger.debug("Created tag '%s' (id=%s), linked to event %s", label, tag_id, event_id)
+
+            # Link tag to event (ignore duplicate)
+            try:
+                cur.execute(
+                    "INSERT INTO Events_Tags (TagId, EventId) VALUES (%s, %s)",
+                    (tag_id, event_id),
+                )
+            except Exception:
+                logger.debug("Tag '%s' already linked to event %s", label, event_id)
+
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
 
     def _save_objdetect(
         self,
@@ -518,39 +521,38 @@ class ZMClient:
             return None
 
         cur = conn.cursor(dictionary=True)
-        cur.execute(
-            "SELECT E.MonitorId, E.StartDateTime, E.StorageId, "
-            "S.Path AS StoragePath, S.Scheme "
-            "FROM Events E LEFT JOIN Storage S ON E.StorageId = S.Id "
-            "WHERE E.Id=%s",
-            (event_id,),
-        )
-        row = cur.fetchone()
+        try:
+            cur.execute(
+                "SELECT E.MonitorId, E.StartDateTime, E.StorageId, "
+                "S.Path AS StoragePath, S.Scheme "
+                "FROM Events E LEFT JOIN Storage S ON E.StorageId = S.Id "
+                "WHERE E.Id=%s",
+                (event_id,),
+            )
+            row = cur.fetchone()
 
-        if not row or not row["StartDateTime"]:
+            if not row or not row["StartDateTime"]:
+                logger.warning("Cannot resolve event path: missing DB fields for event %s", event_id)
+                return None
+
+            storage_path = row.get("StoragePath")
+            scheme = row.get("Scheme")
+
+            if not storage_path:
+                logger.error("Event %s has StorageId=%s which does not map to a valid "
+                             "Storage row — the monitor's storage configuration may be "
+                             "invalid. Falling back to Storage Id=1.",
+                             event_id, row.get("StorageId"))
+                cur.execute(
+                    "SELECT Path, Scheme FROM Storage WHERE Id=1"
+                )
+                fallback = cur.fetchone()
+                if fallback and fallback["Path"]:
+                    storage_path = fallback["Path"]
+                    scheme = fallback.get("Scheme") or scheme
+        finally:
             cur.close()
             conn.close()
-            logger.warning("Cannot resolve event path: missing DB fields for event %s", event_id)
-            return None
-
-        storage_path = row.get("StoragePath")
-        scheme = row.get("Scheme")
-
-        if not storage_path:
-            logger.error("Event %s has StorageId=%s which does not map to a valid "
-                         "Storage row — the monitor's storage configuration may be "
-                         "invalid. Falling back to Storage Id=1.",
-                         event_id, row.get("StorageId"))
-            cur.execute(
-                "SELECT Path, Scheme FROM Storage WHERE Id=1"
-            )
-            fallback = cur.fetchone()
-            if fallback and fallback["Path"]:
-                storage_path = fallback["Path"]
-                scheme = fallback.get("Scheme") or scheme
-
-        cur.close()
-        conn.close()
 
         if not storage_path:
             logger.warning("Cannot resolve event path: no storage path for event %s", event_id)

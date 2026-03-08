@@ -99,7 +99,11 @@ def get_zm_db(
                 logger.warning("DB connect via socket %s failed: %s", suffix, exc)
                 return None
         else:
-            port = int(suffix)
+            try:
+                port = int(suffix)
+            except ValueError:
+                logger.warning("Invalid port in db_host %r, using default 3306", creds["host"])
+                port = 3306
 
     try:
         return mysql.connector.connect(

@@ -129,7 +129,7 @@ class AuthManager:
         if self._is_token_api():
             params["token"] = self._access_token
         elif self._legacy_credentials:
-            sep = "?" if url.lower().endswith(("json", "/")) else "&"
+            sep = "&" if "?" in url else "?"
             url = f"{url}{sep}{self._legacy_credentials}"
 
         return url, params
