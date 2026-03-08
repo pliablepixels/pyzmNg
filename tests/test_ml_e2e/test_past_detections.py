@@ -48,54 +48,58 @@ class TestMatchPastDetections:
             assert len(result2.detections) < first_count or len(result2.detections) == 0
 
     def test_aliases_match_cross_label(self, tmp_path):
-        from pyzm.ml.filters import filter_past_detections
+        from pyzm.ml.filters import load_past_detections, match_past_detections
         past_file = str(tmp_path / "past.pkl")
         with open(past_file, "wb") as fh:
             pickle.dump([[100, 100, 200, 200]], fh)
             pickle.dump(["bus"], fh)
 
         dets = [det("truck", 100, 100, 200, 200)]
-        result = filter_past_detections(
-            dets, past_file, "5%",
+        saved_boxes, saved_labels = load_past_detections(past_file)
+        result = match_past_detections(
+            dets, saved_boxes, saved_labels, "5%",
             aliases=[["car", "bus", "truck"]],
         )
         assert len(result) == 0
 
     def test_ignore_labels_always_kept(self, tmp_path):
-        from pyzm.ml.filters import filter_past_detections
+        from pyzm.ml.filters import load_past_detections, match_past_detections
         past_file = str(tmp_path / "past.pkl")
         with open(past_file, "wb") as fh:
             pickle.dump([[10, 10, 50, 50]], fh)
             pickle.dump(["person"], fh)
 
         dets = [det("person", 10, 10, 50, 50)]
-        result = filter_past_detections(
-            dets, past_file, "5%",
+        saved_boxes, saved_labels = load_past_detections(past_file)
+        result = match_past_detections(
+            dets, saved_boxes, saved_labels, "5%",
             ignore_labels=["person"],
         )
         assert len(result) == 1
 
     def test_per_label_area_override(self, tmp_path):
-        from pyzm.ml.filters import filter_past_detections
+        from pyzm.ml.filters import load_past_detections, match_past_detections
         past_file = str(tmp_path / "past.pkl")
         with open(past_file, "wb") as fh:
             pickle.dump([[10, 10, 50, 50]], fh)
             pickle.dump(["car"], fh)
 
         dets = [det("car", 11, 11, 51, 51)]
-        result = filter_past_detections(
-            dets, past_file, "0px",
+        saved_boxes, saved_labels = load_past_detections(past_file)
+        result = match_past_detections(
+            dets, saved_boxes, saved_labels, "0px",
             label_area_overrides={"car": "50%"},
         )
         assert len(result) == 0
 
     def test_moved_object_passes(self, tmp_path):
-        from pyzm.ml.filters import filter_past_detections
+        from pyzm.ml.filters import load_past_detections, match_past_detections
         past_file = str(tmp_path / "past.pkl")
         with open(past_file, "wb") as fh:
             pickle.dump([[10, 10, 50, 50]], fh)
             pickle.dump(["person"], fh)
 
         dets = [det("person", 500, 500, 600, 600)]
-        result = filter_past_detections(dets, past_file, "5%")
+        saved_boxes, saved_labels = load_past_detections(past_file)
+        result = match_past_detections(dets, saved_boxes, saved_labels, "5%")
         assert len(result) == 1

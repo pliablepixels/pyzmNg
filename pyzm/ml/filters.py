@@ -310,32 +310,3 @@ def match_past_detections(
             kept.append(det)
 
     return kept
-
-
-def filter_past_detections(
-    detections: list[Detection],
-    past_file: str,
-    max_diff_area: str = "5%",
-    label_area_overrides: dict[str, str] | None = None,
-    ignore_labels: list[str] | None = None,
-    aliases: list[list[str]] | None = None,
-) -> list[Detection]:
-    """Compare detections with pickle-stored past detections and remove
-    duplicates whose bounding-box area difference is within *max_diff_area*.
-
-    Convenience wrapper around :func:`load_past_detections`,
-    :func:`match_past_detections`, and :func:`save_past_detections`.
-
-    After filtering, the current detections are saved back to *past_file*
-    for future comparisons.
-    """
-    saved_boxes, saved_labels = load_past_detections(past_file)
-    kept = match_past_detections(
-        detections, saved_boxes, saved_labels,
-        max_diff_area=max_diff_area,
-        label_area_overrides=label_area_overrides,
-        ignore_labels=ignore_labels,
-        aliases=aliases,
-    )
-    save_past_detections(past_file, detections)
-    return kept
