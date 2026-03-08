@@ -32,6 +32,9 @@ from pyzm.models.config import (
     ModelType,
     Processor,
 )
+import requests
+
+from pyzm.ml.filters import filter_by_pattern, filter_by_size, filter_by_zone, filter_past_per_type
 from pyzm.models.detection import DetectionResult
 
 if TYPE_CHECKING:
@@ -283,6 +286,26 @@ class Detector:
             raise FileNotFoundError(f"Could not read image: {path}")
         return img
 
+    def _apply_filters(
+        self,
+        detections: list,
+        zones: list["Zone"] | None,
+        image_shape: tuple[int, int],
+    ) -> tuple[list, list]:
+        """Apply client-side filters: pattern, size, zones, past detections.
+
+        Returns (kept_detections, error_boxes).
+        """
+        h, w = image_shape
+        zone_dicts = [z.as_dict() for z in zones] if zones else []
+
+        detections = filter_by_pattern(detections, self._config.pattern)
+        detections = filter_by_size(detections, self._config.max_detection_size, (h, w))
+        detections, error_boxes = filter_by_zone(detections, zone_dicts, (h, w))
+        detections = filter_past_per_type(detections, self._config)
+
+        return detections, error_boxes
+
     # -- remote gateway helpers -----------------------------------------------
 
     def _ensure_gateway_token(self) -> str | None:
@@ -291,8 +314,6 @@ class Detector:
             return self._gateway_token
         if not self._gateway_username:
             return None
-
-        import requests
 
         resp = requests.post(
             f"{self._gateway}/login",
@@ -312,16 +333,11 @@ class Detector:
         image: "np.ndarray",
         zones: list["Zone"] | None = None,
     ) -> DetectionResult:
-        """Send an image to the remote gateway for detection."""
+        """Send an image to the remote gateway for detection, then filter locally."""
         import cv2
-        import requests
 
         _, jpeg = cv2.imencode(".jpg", image)
         files = {"file": ("image.jpg", jpeg.tobytes(), "image/jpeg")}
-        form_data: dict[str, str] = {}
-        if zones:
-            import json
-            form_data["zones"] = json.dumps([z.as_dict() for z in zones])
 
         headers: dict[str, str] = {}
         token = self._ensure_gateway_token()
@@ -331,14 +347,22 @@ class Detector:
         resp = requests.post(
             f"{self._gateway}/detect",
             files=files,
-            data=form_data,
             headers=headers,
             timeout=self._gateway_timeout,
         )
         resp.raise_for_status()
         result = DetectionResult.from_dict(resp.json())
-        result.image = image
-        return result
+
+        # Apply client-side filters
+        h, w = image.shape[:2]
+        filtered, error_boxes = self._apply_filters(result.detections, zones, (h, w))
+
+        return DetectionResult(
+            detections=filtered,
+            image=image,
+            image_dimensions=result.image_dimensions or {"original": (h, w)},
+            error_boxes=error_boxes,
+        )
 
     def _remote_detect_urls(
         self,
@@ -346,10 +370,9 @@ class Detector:
         zm_auth: str,
         zones: list["Zone"] | None = None,
         verify_ssl: bool = True,
+        original_shape: tuple[int, int] | None = None,
     ) -> DetectionResult:
-        """Send frame URLs to the remote gateway for server-side fetching."""
-        import requests
-
+        """Send frame URLs to the remote gateway, apply client-side filtering."""
         headers: dict[str, str] = {}
         token = self._ensure_gateway_token()
         if token:
@@ -360,8 +383,6 @@ class Detector:
             "zm_auth": zm_auth,
             "verify_ssl": verify_ssl,
         }
-        if zones:
-            payload["zones"] = [z.as_dict() for z in zones]
 
         resp = requests.post(
             f"{self._gateway}/detect_urls",
@@ -370,7 +391,45 @@ class Detector:
             timeout=self._gateway_timeout,
         )
         resp.raise_for_status()
-        return DetectionResult.from_dict(resp.json())
+        data = resp.json()
+
+        per_frame = data.get("results", [])
+        if not per_frame:
+            return DetectionResult()
+
+        strategy = self._config.frame_strategy
+        all_results: list[DetectionResult] = []
+
+        for frame_data in per_frame:
+            fid = frame_data.get("frame_id", "")
+            raw_result = DetectionResult.from_dict(frame_data)
+
+            # Use original_shape for filtering if provided, else use image_dimensions from server
+            img_dims = raw_result.image_dimensions or {}
+            shape = original_shape or img_dims.get("original") or (1, 1)
+
+            filtered, error_boxes = self._apply_filters(raw_result.detections, zones, shape)
+
+            result = DetectionResult(
+                detections=filtered,
+                frame_id=fid,
+                image_dimensions=img_dims,
+                error_boxes=error_boxes,
+            )
+            all_results.append(result)
+
+            # Short-circuit for first/first_new
+            if strategy in (FrameStrategy.FIRST, FrameStrategy.FIRST_NEW) and result.matched:
+                return result
+
+        if not all_results:
+            return DetectionResult()
+
+        best = all_results[0]
+        for r in all_results[1:]:
+            if _is_better(r, best, strategy):
+                best = r
+        return best
 
     # -- public API -----------------------------------------------------------
 

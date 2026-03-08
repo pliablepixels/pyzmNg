@@ -823,8 +823,16 @@ class TestDetectorRemoteMode:
 
         mock_resp = MagicMock()
         mock_resp.json.return_value = {
-            "labels": ["car"], "boxes": [[10, 20, 50, 80]],
-            "confidences": [0.9], "model_names": ["yolov4"],
+            "results": [
+                {
+                    "frame_id": "snapshot",
+                    "labels": ["car"], "boxes": [[10, 20, 50, 80]],
+                    "confidences": [0.9], "model_names": ["yolov4"],
+                    "detection_types": ["object"],
+                    "error_boxes": [],
+                    "image_dimensions": {"original": [100, 100]},
+                },
+            ],
         }
         mock_post.return_value = mock_resp
 
@@ -852,7 +860,7 @@ class TestDetectorRemoteMode:
         mock_login_resp.json.return_value = {"access_token": "jwt123"}
         # Mock detect_urls
         mock_detect_resp = MagicMock()
-        mock_detect_resp.json.return_value = {"labels": [], "boxes": [], "confidences": []}
+        mock_detect_resp.json.return_value = {"results": []}
         mock_post.side_effect = [mock_login_resp, mock_detect_resp]
 
         det = Detector(
@@ -1491,3 +1499,194 @@ class TestDetectAudio:
         assert result.matched is False
         assert result.labels == []
         assert result.frame_id == "audio"
+
+
+# ===================================================================
+# TestApplyFilters
+# ===================================================================
+
+class TestApplyFilters:
+    """Tests for Detector._apply_filters()."""
+
+    def test_pattern_filter_applied(self):
+        from pyzm.ml.detector import Detector
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern="^person$")
+        det._pipeline = None
+        dets = [
+            Detection(label="person", confidence=0.9, bbox=BBox(0, 0, 100, 100), model_name="test"),
+            Detection(label="car", confidence=0.8, bbox=BBox(0, 0, 100, 100), model_name="test"),
+        ]
+        filtered, errors = det._apply_filters(dets, zones=None, image_shape=(480, 640))
+        assert [d.label for d in filtered] == ["person"]
+
+    def test_zone_filter_applied(self):
+        from pyzm.ml.detector import Detector
+        from pyzm.models.zm import Zone
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*")
+        det._pipeline = None
+        zones = [Zone(name="z", points=[(0, 0), (50, 0), (50, 50), (0, 50)], pattern="person")]
+        dets = [
+            Detection(label="person", confidence=0.9, bbox=BBox(10, 10, 40, 40), model_name="test"),
+            Detection(label="car", confidence=0.8, bbox=BBox(10, 10, 40, 40), model_name="test"),
+        ]
+        filtered, errors = det._apply_filters(dets, zones=zones, image_shape=(480, 640))
+        labels = [d.label for d in filtered]
+        assert "car" not in labels
+
+    def test_size_filter_applied(self):
+        from pyzm.ml.detector import Detector
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*", max_detection_size="1%")
+        det._pipeline = None
+        # Detection covering most of the image
+        dets = [Detection(label="person", confidence=0.9, bbox=BBox(0, 0, 600, 400), model_name="test")]
+        filtered, errors = det._apply_filters(dets, zones=None, image_shape=(480, 640))
+        assert len(filtered) == 0
+
+    def test_no_filters_passes_all(self):
+        from pyzm.ml.detector import Detector
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*")
+        det._pipeline = None
+        dets = [
+            Detection(label="person", confidence=0.9, bbox=BBox(0, 0, 100, 100), model_name="test"),
+            Detection(label="car", confidence=0.8, bbox=BBox(0, 0, 100, 100), model_name="test"),
+        ]
+        filtered, errors = det._apply_filters(dets, zones=None, image_shape=(480, 640))
+        assert len(filtered) == 2
+
+
+class TestRemoteDetectFiltering:
+    """Verify that _remote_detect applies client-side filters."""
+
+    @patch("pyzm.ml.detector.requests")
+    def test_remote_detect_applies_pattern_filter(self, mock_requests):
+        from pyzm.ml.detector import Detector
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern="^person$")
+        det._pipeline = None
+        det._gateway = "http://gpu:5000"
+        det._gateway_token = None
+        det._gateway_timeout = 10
+        det._gateway_username = None
+        det._gateway_password = None
+
+        # Server returns person + car (unfiltered)
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "labels": ["person", "car"],
+            "boxes": [[0, 0, 50, 50], [60, 60, 100, 100]],
+            "confidences": [0.9, 0.8],
+            "model_names": ["yolo", "yolo"],
+            "detection_types": ["object", "object"],
+            "error_boxes": [],
+            "image_dimensions": {"original": [100, 100]},
+        }
+        mock_resp.raise_for_status = MagicMock()
+        mock_requests.post.return_value = mock_resp
+
+        import numpy as np
+        image = np.zeros((100, 100, 3), dtype=np.uint8)
+        result = det._remote_detect(image)
+
+        # Client filtered out "car" via pattern
+        assert result.labels == ["person"]
+
+    @patch("pyzm.ml.detector.requests")
+    def test_remote_detect_no_zones_sent(self, mock_requests):
+        """Verify that zones are NOT sent to the server."""
+        from pyzm.ml.detector import Detector
+        from pyzm.models.zm import Zone
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*")
+        det._pipeline = None
+        det._gateway = "http://gpu:5000"
+        det._gateway_token = None
+        det._gateway_timeout = 10
+        det._gateway_username = None
+        det._gateway_password = None
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "labels": ["person"],
+            "boxes": [[0, 0, 50, 50]],
+            "confidences": [0.9],
+            "model_names": ["yolo"],
+            "detection_types": ["object"],
+            "error_boxes": [],
+            "image_dimensions": {},
+        }
+        mock_resp.raise_for_status = MagicMock()
+        mock_requests.post.return_value = mock_resp
+
+        import numpy as np
+        image = np.zeros((100, 100, 3), dtype=np.uint8)
+        zones = [Zone(name="yard", points=[(0, 0), (50, 0), (50, 50), (0, 50)], pattern="person")]
+        det._remote_detect(image, zones=zones)
+
+        # Check that "data" kwarg (form data) was NOT sent -- no zones in request
+        call_kwargs = mock_requests.post.call_args[1]
+        assert "data" not in call_kwargs or not call_kwargs.get("data")
+
+
+class TestRemoteDetectUrlsFiltering:
+    """Verify _remote_detect_urls handles per-frame results and applies filters."""
+
+    @patch("pyzm.ml.detector.requests")
+    def test_remote_detect_urls_applies_filters(self, mock_requests):
+        from pyzm.ml.detector import Detector
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern="^person$", frame_strategy=FrameStrategy.MOST)
+        det._pipeline = None
+        det._gateway = "http://gpu:5000"
+        det._gateway_token = None
+        det._gateway_timeout = 10
+        det._gateway_username = None
+        det._gateway_password = None
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "results": [
+                {
+                    "frame_id": "snapshot",
+                    "labels": ["person", "car"],
+                    "boxes": [[0, 0, 50, 50], [60, 60, 100, 100]],
+                    "confidences": [0.9, 0.8],
+                    "model_names": ["yolo", "yolo"],
+                    "detection_types": ["object", "object"],
+                    "error_boxes": [],
+                    "image_dimensions": {"original": [100, 100]},
+                },
+            ],
+        }
+        mock_resp.raise_for_status = MagicMock()
+        mock_requests.post.return_value = mock_resp
+
+        frame_urls = [{"frame_id": "snapshot", "url": "http://zm/image"}]
+        result = det._remote_detect_urls(frame_urls, zm_auth="token=abc")
+
+        # Pattern filter should remove "car"
+        assert result.labels == ["person"]
+        assert result.frame_id == "snapshot"
+
+    @patch("pyzm.ml.detector.requests")
+    def test_remote_detect_urls_empty_results(self, mock_requests):
+        from pyzm.ml.detector import Detector
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*")
+        det._pipeline = None
+        det._gateway = "http://gpu:5000"
+        det._gateway_token = None
+        det._gateway_timeout = 10
+        det._gateway_username = None
+        det._gateway_password = None
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"results": []}
+        mock_resp.raise_for_status = MagicMock()
+        mock_requests.post.return_value = mock_resp
+
+        result = det._remote_detect_urls([], zm_auth="")
+        assert not result.matched
