@@ -19,6 +19,23 @@ from pyzm.serve.auth import create_login_route, create_token_dependency
 logger = logging.getLogger("pyzm.serve")
 
 
+def _parse_zones(raw_zones: list[dict] | str | None) -> list[Zone] | None:
+    """Parse raw zone data into Zone objects."""
+    if not raw_zones:
+        return None
+    if isinstance(raw_zones, str):
+        raw_zones = json.loads(raw_zones)
+    return [
+        Zone(
+            name=z.get("name", ""),
+            points=z.get("value", z.get("points", [])),
+            pattern=z.get("pattern"),
+            ignore_pattern=z.get("ignore_pattern"),
+        )
+        for z in raw_zones
+    ]
+
+
 def create_app(config: ServerConfig | None = None) -> FastAPI:
     """Build and return a configured FastAPI application.
 
@@ -29,12 +46,16 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        lazy = config.models == ["all"]
-        detector = Detector(
-            models=None if lazy else config.models,
-            base_path=config.base_path,
-            processor=config.processor,
-        )
+        if config.detector_config is not None:
+            detector = Detector(config=config.detector_config)
+            lazy = not config.detector_config.models
+        else:
+            lazy = config.models == ["all"]
+            detector = Detector(
+                models=None if lazy else config.models,
+                base_path=config.base_path,
+                processor=config.processor,
+            )
         detector._ensure_pipeline(lazy=lazy)
         app.state.detector = detector
         mode = "lazy" if lazy else "eager"
@@ -100,15 +121,7 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
         zone_list = None
         if zones:
             try:
-                raw_zones = json.loads(zones)
-                zone_list = [
-                    Zone(
-                        name=z.get("name", ""),
-                        points=z.get("value", z.get("points", [])),
-                        pattern=z.get("pattern"),
-                    )
-                    for z in raw_zones
-                ]
+                zone_list = _parse_zones(zones)
             except (json.JSONDecodeError, TypeError) as exc:
                 raise HTTPException(
                     status_code=400, detail=f"Invalid zones JSON: {exc}"
@@ -141,22 +154,17 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
         if not urls:
             raise HTTPException(status_code=400, detail="No URLs provided")
 
-        zone_list = None
-        raw_zones = payload.get("zones")
-        if raw_zones:
-            try:
-                zone_list = [
-                    Zone(
-                        name=z.get("name", ""),
-                        points=z.get("value", z.get("points", [])),
-                        pattern=z.get("pattern"),
-                    )
-                    for z in raw_zones
-                ]
-            except (TypeError, KeyError) as exc:
-                raise HTTPException(
-                    status_code=400, detail=f"Invalid zones: {exc}"
-                )
+        try:
+            zone_list = _parse_zones(payload.get("zones"))
+        except (TypeError, KeyError) as exc:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid zones: {exc}"
+            )
+
+        orig_shape = None
+        raw_shape = payload.get("original_shape")
+        if raw_shape:
+            orig_shape = tuple(raw_shape)
 
         detector: Detector = app.state.detector
         strategy = detector._config.frame_strategy
@@ -185,12 +193,12 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
                 logger.exception("Failed to fetch frame %s", fid)
                 continue
 
-            result = detector.detect(image, zones=zone_list)
+            result = detector.detect(image, zones=zone_list, original_shape=orig_shape)
             result.frame_id = fid
             results.append(result)
 
-            # Short-circuit for 'first' strategy
-            if strategy == FrameStrategy.FIRST and result.matched:
+            # Short-circuit for 'first' / 'first_new' strategy
+            if strategy in (FrameStrategy.FIRST, FrameStrategy.FIRST_NEW) and result.matched:
                 break
 
         if not results:
