@@ -408,8 +408,8 @@ Controls frame extraction from ZM events:
      - ``["snapshot", "alarm", "1"]``
      - Which frames to extract from the event
    * - ``resize``
-     - ``800``
-     - Resize longest edge to N pixels. ``None`` = no resize.
+     - ``None``
+     - Resize longest edge to N pixels. ``None`` = no resize (use original resolution).
    * - ``max_frames``
      - ``0``
      - Maximum frames to extract. ``0`` = no limit.
