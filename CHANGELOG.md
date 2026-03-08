@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.3.2] - 2026-03-08
+
+### Bug Fixes
+
+- change StreamConfig.resize default from 800 to None ([ac18a2d](https://github.com/pliablepixels/pyzm/commit/ac18a2da6a5396fb8f72ae1bbcae5acc6801b878))
+
+### Documentation
+
+- add AGENTS.md with plan file hygiene instructions ([042bbbd](https://github.com/pliablepixels/pyzm/commit/042bbbdaeed443c8512d6f9b921a85ae07fd99e5))
+
+### Miscellaneous
+
+- ver bump ([6cb97ce](https://github.com/pliablepixels/pyzm/commit/6cb97ce156c7b235136819744218d51d610eafda))
+
 ## [2.3.1] - 2026-03-08
 
 ### Bug Fixes
@@ -15,6 +29,10 @@ All notable changes to this project will be documented in this file.
 - read max_lock_wait and max_processes from YAML config ([589eafc](https://github.com/pliablepixels/pyzm/commit/589eafccb148bc18eeca8b8184f9820cbc69f21d))
 - populate ModelConfig.options from YAML sequence items ([524503c](https://github.com/pliablepixels/pyzm/commit/524503cbc8706d5ea2b9116b6d9aa6dbf46f19c0))
 - handle YAML booleans in config parsing (true/false vs yes/no) ([d14b119](https://github.com/pliablepixels/pyzm/commit/d14b119966a5096eb5a0aa076f44dc172abc4979))
+
+### Documentation
+
+- update CHANGELOG for v2.3.1 ([81f0e46](https://github.com/pliablepixels/pyzm/commit/81f0e465a630ef66341adc39c3dfe64f92bfa388))
 
 ### Features
 
