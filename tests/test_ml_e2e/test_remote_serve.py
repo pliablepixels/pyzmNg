@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from tests.test_ml_e2e.conftest import (
@@ -110,25 +108,28 @@ class TestRemoteDetection:
         finally:
             stop_serve(proc)
 
-    def test_detect_with_zones_via_serve(self):
-        import requests
+    def test_detect_with_zones_via_gateway(self):
+        """Zones are applied client-side when using gateway mode."""
+        from pyzm.ml.detector import Detector
+        from pyzm.models.zm import Zone
+        import cv2
         port = self.PORT + 5
-        proc = start_serve([find_one_model()], port)
+        model = find_one_model()
+        proc = start_serve([model], port)
         try:
             assert wait_for_serve(port), "Server failed to start"
-            zones = json.dumps([
-                {"name": "full", "points": [[0, 0], [5000, 0], [5000, 5000], [0, 5000]], "pattern": "bird"},
-            ])
-            with open(BIRD_IMAGE, "rb") as f:
-                r = requests.post(
-                    f"http://127.0.0.1:{port}/detect",
-                    files={"file": ("bird.jpg", f, "image/jpeg")},
-                    data={"zones": zones},
-                )
-            assert r.status_code == 200
-            data = r.json()
-            for label in data.get("labels", []):
-                assert label == "bird"
+            det = Detector(
+                models=[model],
+                base_path=BASE_PATH,
+                gateway=f"http://127.0.0.1:{port}",
+            )
+            img = cv2.imread(BIRD_IMAGE)
+            h, w = img.shape[:2]
+            # Zone covering full image but only allowing "bird" pattern
+            zones = [Zone(name="full", points=[(0, 0), (w, 0), (w, h), (0, h)], pattern="bird")]
+            result = det.detect(img, zones=zones)
+            for d in result.detections:
+                assert d.label == "bird"
         finally:
             stop_serve(proc)
 
