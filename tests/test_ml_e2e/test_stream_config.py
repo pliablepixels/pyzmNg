@@ -9,7 +9,7 @@ class TestStreamConfigFromDict:
         from pyzm.models.config import StreamConfig
         sc = StreamConfig()
         assert sc.frame_set == ["snapshot", "alarm", "1"]
-        assert sc.resize == 800
+        assert sc.resize is None
         assert sc.max_frames == 0
 
     def test_resize_no(self):

@@ -432,7 +432,7 @@ class StreamConfig(BaseModel):
     """Controls how frames are extracted from a ZM event or video file."""
     frame_set: list[str] = Field(default_factory=lambda: ["snapshot", "alarm", "1"])
     max_frames: int = 0
-    resize: int | None = 800
+    resize: int | None = None
     start_frame: int = 1
     frame_skip: int = 1
     download: bool = False

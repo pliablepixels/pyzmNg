@@ -593,7 +593,7 @@ class TestStreamConfig:
         sc = StreamConfig()
         assert sc.frame_set == ["snapshot", "alarm", "1"]
         assert sc.max_frames == 0
-        assert sc.resize == 800
+        assert sc.resize is None
         assert sc.start_frame == 1
         assert sc.frame_skip == 1
         assert sc.delay == 0
