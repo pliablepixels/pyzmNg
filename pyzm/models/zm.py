@@ -231,6 +231,7 @@ class Notification:
     interval: int = 0
     push_state: str = "enabled"
     app_version: str | None = None
+    profile: str | None = None
     badge_count: int = 0
     last_notified_at: datetime | None = None
 
@@ -291,6 +292,7 @@ class Notification:
             interval=int(n.get("Interval", 0)),
             push_state=n.get("PushState", "enabled"),
             app_version=n.get("AppVersion"),
+            profile=n.get("Profile"),
             badge_count=int(n.get("BadgeCount", 0)),
             last_notified_at=_parse_dt(n.get("LastNotifiedAt")),
             _raw=data,
