@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.3.3] - 2026-03-10
+
+### Documentation
+
+- rename zmNg/zmNinja to zmNinjaNG across all references ([9334fe6](https://github.com/pliablepixels/pyzm/commit/9334fe65905aa11f6d6bdb850edbd4942364c3b8))
+- fix resize default in StreamConfig table (800 → None) ([11e6cad](https://github.com/pliablepixels/pyzm/commit/11e6cad4e9c60aeae5f060371ff4807744374adb))
+
+### Features
+
+- add profile field to Notification model ([098a0e4](https://github.com/pliablepixels/pyzm/commit/098a0e4180d95f692f55e63ace3ee08ab8456f17))
+
+### Miscellaneous
+
+- ver bump ([9d270ee](https://github.com/pliablepixels/pyzm/commit/9d270ee5889b1438223539a44f92f87c9eb2a95b))
+
 ## [2.3.2] - 2026-03-08
 
 ### Bug Fixes
@@ -11,6 +26,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
+- update CHANGELOG for v2.3.2 ([96f839d](https://github.com/pliablepixels/pyzm/commit/96f839d9162414a267c5c351b83f4222394d74fc))
 - add AGENTS.md with plan file hygiene instructions ([042bbbd](https://github.com/pliablepixels/pyzm/commit/042bbbdaeed443c8512d6f9b921a85ae07fd99e5))
 
 ### Miscellaneous
