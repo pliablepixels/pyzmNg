@@ -291,13 +291,30 @@ class Detector:
         detections: list,
         zones: list["Zone"] | None,
         image_shape: tuple[int, int],
+        original_shape: tuple[int, int] | None = None,
     ) -> tuple[list, list]:
         """Apply client-side filters: pattern, size, zones, past detections.
+
+        Parameters
+        ----------
+        original_shape:
+            ``(height, width)`` of the image before resizing.  When provided
+            and different from *image_shape*, zone polygons are rescaled from
+            original coordinates to match the (resized) detection space.
 
         Returns (kept_detections, error_boxes).
         """
         h, w = image_shape
         zone_dicts = [z.as_dict() for z in zones] if zones else []
+
+        # Rescale zone polygons when the image was resized
+        if original_shape and zone_dicts and (original_shape[0] != h or original_shape[1] != w):
+            orig_h, orig_w = original_shape
+            xfactor = w / orig_w
+            yfactor = h / orig_h
+            for zd in zone_dicts:
+                pts = zd.get("value") or zd.get("points", [])
+                zd["value"] = [(int(x * xfactor), int(y * yfactor)) for x, y in pts]
 
         detections = filter_by_pattern(detections, self._config.pattern)
         detections = filter_by_size(detections, self._config.max_detection_size, (h, w))
@@ -332,6 +349,7 @@ class Detector:
         self,
         image: "np.ndarray",
         zones: list["Zone"] | None = None,
+        original_shape: tuple[int, int] | None = None,
     ) -> DetectionResult:
         """Send an image to the remote gateway for detection, then filter locally."""
         import cv2
@@ -355,7 +373,9 @@ class Detector:
 
         # Apply client-side filters
         h, w = image.shape[:2]
-        filtered, error_boxes = self._apply_filters(result.detections, zones, (h, w))
+        filtered, error_boxes = self._apply_filters(
+            result.detections, zones, (h, w), original_shape=original_shape,
+        )
 
         return DetectionResult(
             detections=filtered,
@@ -845,7 +865,7 @@ class Detector:
 
         for frame_id, image in frames:
             try:
-                result = self._remote_detect(image, zones)
+                result = self._remote_detect(image, zones, original_shape=original_shape)
                 result.frame_id = frame_id
                 if original_shape:
                     result.image_dimensions["original"] = original_shape

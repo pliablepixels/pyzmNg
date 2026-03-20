@@ -1557,6 +1557,64 @@ class TestApplyFilters:
         filtered, errors = det._apply_filters(dets, zones=None, image_shape=(480, 640))
         assert len(filtered) == 2
 
+    def test_zone_rescaled_with_original_shape(self):
+        """Zone polygons should be rescaled when original_shape differs from image_shape."""
+        from pyzm.ml.detector import Detector
+        from pyzm.models.zm import Zone
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*")
+        det._pipeline = None
+        # Zone covers a small region in 800x480 (original) coordinates
+        # After 0.5x resize to 400x240, detection bbox at (10,10)-(90,90) in resized space
+        # Zone must be rescaled to (50,100)-(200,200) in resized space to contain bbox
+        zones = [Zone(name="z", points=[(0, 0), (200, 0), (200, 200), (0, 200)])]
+        dets = [
+            Detection(label="person", confidence=0.9, bbox=BBox(10, 10, 90, 90), model_name="test"),
+        ]
+        # With original_shape: zones get rescaled from 800x480 to 400x240
+        filtered, errors = det._apply_filters(
+            dets, zones=zones, image_shape=(240, 400), original_shape=(480, 800),
+        )
+        assert len(filtered) == 1
+        assert filtered[0].label == "person"
+
+    def test_zone_not_rescaled_without_original_shape(self):
+        """Without original_shape, zone polygons pass through unchanged."""
+        from pyzm.ml.detector import Detector
+        from pyzm.models.zm import Zone
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*")
+        det._pipeline = None
+        zones = [Zone(name="z", points=[(0, 0), (50, 0), (50, 50), (0, 50)])]
+        dets = [
+            Detection(label="person", confidence=0.9, bbox=BBox(10, 10, 40, 40), model_name="test"),
+        ]
+        filtered, errors = det._apply_filters(dets, zones=zones, image_shape=(480, 640))
+        assert len(filtered) == 1
+
+    def test_zone_mismatch_without_rescaling(self):
+        """Without original_shape, large original-coord zones won't match small-image detections."""
+        from pyzm.ml.detector import Detector
+        from pyzm.models.zm import Zone
+        det = Detector.__new__(Detector)
+        det._config = DetectorConfig(pattern=".*")
+        det._pipeline = None
+        # Zone is in original coords (600-800 range), but image is only 400 wide
+        # Detection at (10,10)-(90,90) in resized space won't intersect
+        zones = [Zone(name="z", points=[(600, 300), (800, 300), (800, 480), (600, 480)])]
+        dets = [
+            Detection(label="person", confidence=0.9, bbox=BBox(10, 10, 90, 90), model_name="test"),
+        ]
+        # Without original_shape: zone coords stay in 800x480 space, won't intersect detection
+        filtered, errors = det._apply_filters(dets, zones=zones, image_shape=(240, 400))
+        assert len(filtered) == 0
+
+        # With original_shape: zone rescaled to (300,150)-(400,240), still won't intersect (10,10)-(90,90)
+        filtered2, _ = det._apply_filters(
+            dets, zones=zones, image_shape=(240, 400), original_shape=(480, 800),
+        )
+        assert len(filtered2) == 0
+
 
 class TestRemoteDetectFiltering:
     """Verify that _remote_detect applies client-side filters."""
