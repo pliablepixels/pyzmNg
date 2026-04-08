@@ -77,16 +77,16 @@ only the frames it needs.
 Deployment scenarios
 ---------------------
 
-Scenario 1: ZM + Event Server + hooks + pyzm (same box)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Scenario 1: ZM + EventServerNg + hooks + pyzm (same box)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Everything runs on the same machine. The ZoneMinder Event Server (ES)
+Everything runs on the same machine. The ZoneMinder EventServerNg (zmesNg)
 triggers hook scripts which call ``zm_detect.py``, and detection runs
 locally via the ``Detector`` class.
 
 .. code-block:: text
 
-   ZoneMinder --> zmeventnotification.pl (ES)
+   ZoneMinder --> zmeventnotification.pl (zmesNg)
                      |
                      v
                   zm_event_start.sh
@@ -121,10 +121,10 @@ locally via the ``Detector`` class.
        --eventid 12345
 
 
-Scenario 2: ZM + hooks + pyzm (same box, no ES)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Scenario 2: ZM + hooks + pyzm (same box, no zmesNg)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Same as Scenario 1 but without the Event Server. ZoneMinder calls
+Same as Scenario 1 but without EventServerNg. ZoneMinder calls
 ``zm_detect.py`` directly via its ``EventStartCommand`` / ``EventEndCommand``
 recording settings.
 

@@ -3,7 +3,7 @@ Installation
 
 .. important::
 
-   pyzm and zmeventnotification now install into a **shared Python virtual
+   pyzm and zmesNg now install into a **shared Python virtual
    environment** (``/opt/zoneminder/venv`` by default) instead of installing
    globally with ``pip install --break-system-packages``.
 
@@ -14,7 +14,7 @@ Installation
      block global pip installs.
    - ``--break-system-packages`` bypasses that protection but can break
      OS tools that depend on the system Python.
-   - Multiple ZoneMinder components (pyzm, zmeventnotification hooks) need
+   - Multiple ZoneMinder components (pyzm, zmesNg hooks) need
      to share a single Python environment — a dedicated venv gives them
      isolation from the OS while still sharing packages with each other.
 
@@ -32,7 +32,7 @@ Path A: Install from PyPI
 The simplest path — no need to clone the repo. Do **NOT** use this path if you have installed ``opencv-python`` from source
 as it will overwrite it. Use the build from source path as we have guardrails to preserve your existing ``opencv-python``
 
-**1. Create the venv** (skip if it already exists, e.g. from zmeventnotification's
+**1. Create the venv** (skip if it already exists, e.g. from zmesNg's
 installer):
 
 .. code-block:: bash
@@ -86,7 +86,7 @@ OpenCV shim, and ownership in one step.
    # Custom venv path:
    sudo ZM_VENV=/usr/local/zm/venv ./scripts/setup_venv.sh
 
-If the venv already exists (e.g. created by zmeventnotification's installer),
+If the venv already exists (e.g. created by zmesNg's installer),
 the script reuses it and just installs/upgrades pyzm.
 
 **Quick editable install** — if you are making local changes to the pyzm source
@@ -136,7 +136,7 @@ What each extra installs
    requires ``opencv-python`` from PyPI — even if you already have OpenCV
    installed from source or your system package manager.
 
-   The install script (``scripts/setup_venv.sh`` and zmeventnotification's
+   The install script (``scripts/setup_venv.sh`` and zmesNg's
    ``install.sh``) attempts to work around this by creating a compatibility
    shim: if ``cv2`` is already importable when the venv is created, a fake
    ``opencv-python`` dist-info entry is registered so that pip considers the
