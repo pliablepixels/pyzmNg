@@ -3,10 +3,29 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.3.4] - 2026-04-08
+
+### Bug Fixes
+
+- rescale zone polygons in remote gateway image-upload path ([6b15af1](https://github.com/pliablepixels/pyzm/commit/6b15af17a569f470e02ed5c39711323b5220663e))
+
+### Documentation
+
+- rename Event Server v7+ to EventServerNg and zmes to zmesNg ([8c0910a](https://github.com/pliablepixels/pyzm/commit/8c0910a11ced92876084da8d1235c757e8560945))
+- removed the tips - not useful ([4674c31](https://github.com/pliablepixels/pyzm/commit/4674c316d3b2a58cbd6bdbeae42a2c9315596c4a))
+
+### Miscellaneous
+
+- ver bump ([a2a036c](https://github.com/pliablepixels/pyzm/commit/a2a036c7b01b08adc8d3d85645317e8576d91ec8))
+- rename project from pyzmv2 to pyzmNg in RTD config ([df09f17](https://github.com/pliablepixels/pyzm/commit/df09f17c56019f5b03eb92d8468d272e68f47766))
+- point RTD logo to logo/ and remove stale copy ([74f2fa1](https://github.com/pliablepixels/pyzm/commit/74f2fa13375ebdf0ec7ad7c280ed71eaedf2f424))
+- logo ([9c4777b](https://github.com/pliablepixels/pyzm/commit/9c4777bcc501e99aa4cf86baf3041e4cb40fdb87))
+
 ## [2.3.3] - 2026-03-10
 
 ### Documentation
 
+- update CHANGELOG for v2.3.3 ([a87806e](https://github.com/pliablepixels/pyzm/commit/a87806e4568ad43ecb721fd6d50efd164448c357))
 - rename zmNg/zmNinja to zmNinjaNG across all references ([9334fe6](https://github.com/pliablepixels/pyzm/commit/9334fe65905aa11f6d6bdb850edbd4942364c3b8))
 - fix resize default in StreamConfig table (800 → None) ([11e6cad](https://github.com/pliablepixels/pyzm/commit/11e6cad4e9c60aeae5f060371ff4807744374adb))
 
