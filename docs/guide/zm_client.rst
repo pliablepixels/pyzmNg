@@ -146,7 +146,7 @@ Notifications (Push Tokens)
 *Requires ZoneMinder 1.39.2+.*
 
 ZoneMinder's ``Notifications`` API stores FCM push tokens registered by client
-apps (e.g. zmNinjaNG). pyzm provides methods to query and manage these tokens —
+apps (e.g. zmNinjaNg). pyzm provides methods to query and manage these tokens —
 primarily used by ``zm_detect`` to send push notifications after detection.
 
 .. code-block:: python
